@@ -31,6 +31,9 @@ class _MyAppState extends State<MyApp> {
   TextEditingController gpa = TextEditingController();
   String studentName, studentID, studyProgramID;
   double studentGPA;
+
+  final _formKey = GlobalKey<FormState>();
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   
   void updateLocalData(){
     this.studentName = name.text;
@@ -40,7 +43,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void createData(){
-    print("create pressed");
+    print("create pressed");  
     updateLocalData();
    DocumentReference documentReference = Firestore.instance.collection("MyStudents")
     .document(studentName);
@@ -55,6 +58,7 @@ class _MyAppState extends State<MyApp> {
     try {
       documentReference.setData(students).whenComplete((){
       print("$studentName created");
+
     }); 
     } catch (e) {
       print(e);
@@ -106,6 +110,10 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  void _displaySnackBar(BuildContext context, String info){
+    final snackBar = SnackBar(content: Text(info));
+    _scaffoldKey.currentState.showSnackBar(snackBar);
+  }
 
   Widget _customTextField(String label, TextEditingController c){
     return(
@@ -120,13 +128,19 @@ class _MyAppState extends State<MyApp> {
                   width: 2.0)
                 )
               ),
+              validator: (value) {
+              if (value.isEmpty) {
+                return 'Por favor preencha esse campo';
+              }
+              return null;
+            },
               controller: c,
             ),
           )
     );
   }
 
-  Widget _customRaisedButton(Color customColor, String buttonName, Function myEspecificFunc){
+  Widget _customRaisedButton(BuildContext context,Color customColor, String buttonName, Function myEspecificFunc, String info){
     return(
       RaisedButton(
         color: customColor,
@@ -135,7 +149,12 @@ class _MyAppState extends State<MyApp> {
           ),
           child: Text(buttonName),
           textColor: Colors.white,
-          onPressed: myEspecificFunc,
+          onPressed: (){
+            _displaySnackBar(context, info);
+            if(_formKey.currentState.validate()){
+              myEspecificFunc();
+            }
+          },
       )
     );
   }
@@ -146,6 +165,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {  
 
     return Scaffold(
+      key: _scaffoldKey,
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.only(top: 20.0),
@@ -166,24 +186,32 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
       appBar: AppBar(
-        title: Text("My flutter collect"),
+        title: Text("Painel de controle"),
       ),
 
       body: SingleChildScrollView(
         padding: EdgeInsets.all(10.0),
         child: Column(
         children: <Widget>[
-          _customTextField("name", name),
-          _customTextField("Student ID", id ),
-          _customTextField("Study program ID", pID ),
-          _customTextField("GPA", gpa),
+          Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+              _customTextField("name", name),
+              _customTextField("Student ID", id ),
+              _customTextField("Study program ID", pID ),
+              _customTextField("GPA", gpa),
+              ],
+            ),
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
-              _customRaisedButton(Colors.green, "Create", createData),
-              _customRaisedButton(Colors.blue, "Read", readData),
-              _customRaisedButton(Colors.orange, "Update", updateData),
-              _customRaisedButton(Colors.red, "Delete", deleteData)
+              _customRaisedButton(context,Colors.green, "Create", createData, "Criando registro"),
+              _customRaisedButton(context,Colors.blue, "Read", readData, "Lendo registro"),
+              _customRaisedButton(context,Colors.orange, "Update", updateData, "Atualizando registro"),
+              _customRaisedButton(context,Colors.red, "Delete", deleteData, "excluindo registro")
             ],
           ),
         ],
